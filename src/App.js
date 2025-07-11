@@ -15,22 +15,25 @@ function AppWrapper() {
   const [isGameLoading, setIsGameLoading] = useState(true);
 
   useEffect(() => {
-    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD ---
+    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD (con logs de depuración) ---
     const params = new URLSearchParams(window.location.search);
     const sso = params.get('sso');
     const email = params.get('email');
     const password = params.get('password');
 
     if (sso === 'true' && email && password) {
-      supabase.auth.signInWithPassword({ email, password }).then(({ error }) => {
+      console.log('Intentando login federado con:', email, password);
+      supabase.auth.signInWithPassword({ email, password }).then(({ error, data }) => {
         if (!error) {
+          console.log('Login federado exitoso', data);
           window.location.href = '/game'; // O la ruta que prefieras
-          setTimeout(() => window.close(), 1000); // Intenta cerrar si es popup
+          setTimeout(() => window.close(), 1000);
         } else {
+          console.error('Error en login federado:', error);
           window.location.href = '/';
         }
       });
-      return; // No sigas con la validación normal
+      return;
     }
     // --- FIN SSO AUTOLOGIN ---
 
