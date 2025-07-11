@@ -15,17 +15,14 @@ function AppWrapper() {
   const [isGameLoading, setIsGameLoading] = useState(true);
 
   useEffect(() => {
-    // --- SSO AUTOLOGIN ---
+    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD ---
     const params = new URLSearchParams(window.location.search);
     const sso = params.get('sso');
-    const token = params.get('token');
-    const refresh = params.get('refresh');
+    const email = params.get('email');
+    const password = params.get('password');
 
-    if (sso === 'true' && token && refresh) {
-      supabase.auth.setSession({
-        access_token: token,
-        refresh_token: refresh,
-      }).then(({ error }) => {
+    if (sso === 'true' && email && password) {
+      supabase.auth.signInWithPassword({ email, password }).then(({ error }) => {
         if (!error) {
           window.location.href = '/game'; // O la ruta que prefieras
           setTimeout(() => window.close(), 1000); // Intenta cerrar si es popup
