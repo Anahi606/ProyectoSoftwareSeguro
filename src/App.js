@@ -15,6 +15,28 @@ function AppWrapper() {
   const [isGameLoading, setIsGameLoading] = useState(true);
 
   useEffect(() => {
+    // --- SSO AUTOLOGIN ---
+    const params = new URLSearchParams(window.location.search);
+    const sso = params.get('sso');
+    const token = params.get('token');
+    const refresh = params.get('refresh');
+
+    if (sso === 'true' && token && refresh) {
+      supabase.auth.setSession({
+        access_token: token,
+        refresh_token: refresh,
+      }).then(({ error }) => {
+        if (!error) {
+          window.location.href = '/game'; // O la ruta que prefieras
+          setTimeout(() => window.close(), 1000); // Intenta cerrar si es popup
+        } else {
+          window.location.href = '/';
+        }
+      });
+      return; // No sigas con la validación normal
+    }
+    // --- FIN SSO AUTOLOGIN ---
+
     const validateSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       const user = data?.session?.user;
