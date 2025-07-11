@@ -125,7 +125,7 @@ const Games = () => {
     if (error) {
       console.error('Error al cerrar sesión:', error.message);
     } else {
-      navigate('/');
+      window.location.href = 'http://localhost:3000/login';
     }
   };
 

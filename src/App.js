@@ -13,92 +13,51 @@ function AppWrapper() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [isGameLoading, setIsGameLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD (con logs de depuración) ---
+    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD (acceso solo desde app principal) ---
     const params = new URLSearchParams(window.location.search);
     const sso = params.get('sso');
     const email = params.get('email');
     const password = params.get('password');
 
     if (sso === 'true' && email && password) {
-      console.log('Intentando login federado con:', email, password);
-      supabase.auth.signInWithPassword({ email, password }).then(({ error, data }) => {
+      supabase.auth.signInWithPassword({ email, password }).then(({ error }) => {
+        setLoading(false);
         if (!error) {
-          console.log('Login federado exitoso', data);
-          window.location.href = '/game'; // O la ruta que prefieras
+          window.location.href = '/game';
           setTimeout(() => window.close(), 1000);
         } else {
-          console.error('Error en login federado:', error);
-          window.location.href = '/';
+          setAccessDenied(true);
+          alert('No tienes acceso. Vuelve a iniciar sesión desde la app principal.');
         }
       });
+      return;
+    } else {
+      setLoading(false);
+      setAccessDenied(true);
+      alert('Acceso solo permitido desde la app principal.');
       return;
     }
     // --- FIN SSO AUTOLOGIN ---
 
-    const validateSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-
-      if (!user || error) {
-        console.log('No user or error:', error);
-        if (location.pathname !== '/') navigate('/');
-        setLoading(false);
-        setIsGameLoading(false);
-        return;
-      }
-
-      const { data: roleData, error: roleError } = await supabase
-        .from('Roles')
-        .select('isAdmin')
-        .eq('userid', user.id)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('Error fetching role:', roleError);
-        setLoading(false);
-        setIsGameLoading(false);
-        return;
-      }
-
-      const role = roleData?.isAdmin ? 'admin' : 'user';
-      setUserRole(role);
-
-      if (role === 'user' && location.pathname == '/') {
-        console.log('User role detected, navigating to /userPage');
-        navigate('/userPage');
-      }
-      if (role === 'admin' && location.pathname == '/') {
-        console.log('Admin role detected, navigating to /game');
-        navigate('/game');
-      }
-
-      setLoading(false);
-      setIsGameLoading(false);
-    };
-
-    validateSession();
+    // El resto del useEffect ya no es necesario porque no hay login manual
   }, [navigate, location.pathname]);
 
-  if (loading) return null;
+  if (loading) return <div>Cargando...</div>;
+  if (accessDenied) return <div style={{color: 'red', fontWeight: 'bold', marginTop: '2rem'}}>Acceso solo permitido desde la app principal.</div>;
 
   return (
     <div className="App">
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route 
-          path="/game" 
-          element={
-            isGameLoading ? (
-              <div className="loading-container">
-                <div className="loading-spinner">Cargando...</div>
-              </div>
-            ) : (
-              <Game />
-            )
-          } 
-        />
+        <Route path="/game" element={isGameLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner">Cargando...</div>
+          </div>
+        ) : (
+          <Game />
+        )} />
         <Route path="/userPage" element={<NotAuthorized />} />
         <Route path="/game/:id" element={<GameDetails />} />
       </Routes>
