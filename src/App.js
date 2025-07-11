@@ -23,11 +23,32 @@ function AppWrapper() {
     const password = params.get('password');
 
     if (sso === 'true' && email && password) {
-      supabase.auth.signInWithPassword({ email, password }).then(({ error }) => {
+      supabase.auth.signInWithPassword({ email, password }).then(async ({ error }) => {
         setLoading(false);
         if (!error) {
-          window.location.href = '/game';
-          setTimeout(() => window.close(), 1000);
+          // Obtener el usuario y su rol
+          const { data: sessionData } = await supabase.auth.getSession();
+          const user = sessionData?.session?.user;
+          if (user) {
+            const { data: roleData, error: roleError } = await supabase
+              .from('Roles')
+              .select('isAdmin')
+              .eq('userid', user.id)
+              .maybeSingle();
+            if (!roleError) {
+              const role = roleData?.isAdmin ? 'admin' : 'user';
+              if (role === 'admin') {
+                window.location.href = '/game';
+              } else {
+                window.location.href = '/userPage';
+              }
+              setTimeout(() => window.close(), 1000);
+              return;
+            }
+          }
+          // Si no se puede determinar el rol, acceso denegado
+          setAccessDenied(true);
+          alert('No tienes acceso. Vuelve a iniciar sesión desde la app principal.');
         } else {
           setAccessDenied(true);
           alert('No tienes acceso. Vuelve a iniciar sesión desde la app principal.');
@@ -41,8 +62,6 @@ function AppWrapper() {
       return;
     }
     // --- FIN SSO AUTOLOGIN ---
-
-    // El resto del useEffect ya no es necesario porque no hay login manual
   }, [navigate, location.pathname]);
 
   if (loading) return <div>Cargando...</div>;
