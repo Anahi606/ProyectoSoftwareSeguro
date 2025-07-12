@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from './supabaseConfig';
+import { dataSupabase } from './supabaseConfig';
 import styled from 'styled-components';
 
 const Container = styled.div`
@@ -109,10 +109,10 @@ const GameDetails = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      const { data: gameData } = await supabase.from('Games').select('*').eq('id', id).single();
+      const { data: gameData } = await dataSupabase.from('Games').select('*').eq('id', id).single();
       setGame(gameData);
 
-      const { data: priceData, error } = await supabase
+      const { data: priceData, error } = await dataSupabase
         .from('Prices_by_pages')
         .select('*, Pages(nameWeb, url)')
         .eq('idgame', id);
@@ -121,7 +121,7 @@ const GameDetails = () => {
       else setPrices(priceData);
 
       if (gameData?.category_id) {
-        const { data: relatedGames } = await supabase
+        const { data: relatedGames } = await dataSupabase
           .from('Games')
           .select('*')
           .eq('category_id', gameData.category_id)
@@ -130,7 +130,7 @@ const GameDetails = () => {
 
         if (relatedGames && relatedGames.length > 0) {
           setRelatedGame(relatedGames[0]);
-          const { data: relatedPrices } = await supabase
+          const { data: relatedPrices } = await dataSupabase
             .from('Prices_by_pages')
             .select('*, Pages(nameWeb, url)')
             .eq('idgame', relatedGames[0].id);

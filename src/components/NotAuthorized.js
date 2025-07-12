@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from './supabaseConfig';
+import { dataSupabase } from './supabaseConfig';
 import styled from 'styled-components';
 import GlobalStyle from './styles/GlobalStyle';
 
@@ -89,14 +89,14 @@ const Games = () => {
   const navigate = useNavigate();
 
   const fetchGamesWithLowestPrice = async () => {
-    const { data: gamesData, error: gamesError } = await supabase.from('Games').select('*');
+    const { data: gamesData, error: gamesError } = await dataSupabase.from('Games').select('*');
 
     if (gamesError) {
       console.error('Error fetching games:', gamesError.message);
       return;
     }
 
-    const { data: pricesData, error: pricesError } = await supabase.from('Prices_by_pages').select('*');
+    const { data: pricesData, error: pricesError } = await dataSupabase.from('Prices_by_pages').select('*');
 
     if (pricesError) {
       console.error('Error fetching prices:', pricesError.message);
@@ -121,7 +121,7 @@ const Games = () => {
   );
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await dataSupabase.auth.signOut();
     if (error) {
       console.error('Error al cerrar sesión:', error.message);
     } else {

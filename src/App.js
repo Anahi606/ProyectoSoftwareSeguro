@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import './App.css';
+import Login from './components/crud/Login';
 import Game from './components/crud/Game';
 import { supabase } from './components/supabaseConfig';
 import NotAuthorized from './components/NotAuthorized';
@@ -15,22 +16,19 @@ function AppWrapper() {
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    // --- SSO AUTOLOGIN CON TOKENS (acceso solo desde app principal) ---
+    // --- SSO AUTOLOGIN CON EMAIL Y PASSWORD (acceso solo desde app principal) ---
     const params = new URLSearchParams(window.location.search);
     const sso = params.get('sso');
-    const token = params.get('token');
-    const refresh = params.get('refresh');
+    const email = params.get('email');
+    const password = params.get('password');
 
-    if (sso === 'true' && token && refresh) {
-      // Establecer la sesión usando los tokens recibidos
-      supabase.auth.setSession({
-        access_token: token,
-        refresh_token: refresh
-      }).then(async ({ data, error }) => {
+    if (sso === 'true' && email && password) {
+      supabase.auth.signInWithPassword({ email, password }).then(async ({ error }) => {
         setLoading(false);
-        if (!error && data.session) {
+        if (!error) {
           // Obtener el usuario y su rol
-          const user = data.session.user;
+          const { data: sessionData } = await supabase.auth.getSession();
+          const user = sessionData?.session?.user;
           if (user) {
             const { data: roleData, error: roleError } = await supabase
               .from('Roles')
@@ -44,6 +42,7 @@ function AppWrapper() {
               } else {
                 window.location.href = '/userPage';
               }
+              setTimeout(() => window.close(), 1000);
               return;
             }
           }

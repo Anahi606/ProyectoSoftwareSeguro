@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, federatedSupabase } from './supabaseConfig';
+import { authSupabase, dataSupabase } from './supabaseConfig';
 
 const AuthContext = createContext();
 
@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   // Función para sincronizar sesión con proyecto federado
   const syncSessionToFederated = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await authSupabase.auth.getSession();
       if (session) {
         // Establecer la sesión en el proyecto federado
-        const { error } = await federatedSupabase.auth.setSession(session);
+        const { error } = await dataSupabase.auth.setSession(session);
         if (error) {
           console.warn('Error sincronizando sesión:', error);
         } else {
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   // Función para obtener el rol del usuario
   const getUserRole = async (userId) => {
     try {
-      const { data: roleData, error: roleError } = await federatedSupabase
+      const { data: roleData, error: roleError } = await dataSupabase
         .from('Roles')
         .select('isAdmin')
         .eq('userid', userId)
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   const handleSSOWithTokens = async (accessToken, refreshToken) => {
     try {
       // Establecer la sesión con los tokens
-      const { data, error } = await federatedSupabase.auth.setSession({
+      const { data, error } = await dataSupabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken
       });
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
   // Función para manejar SSO con email y password
   const handleSSOWithCredentials = async (email, password) => {
     try {
-      const { data, error } = await federatedSupabase.auth.signInWithPassword({ 
+      const { data, error } = await dataSupabase.auth.signInWithPassword({ 
         email, 
         password 
       });
@@ -104,14 +104,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     // Cerrar sesión en ambos proyectos
-    await supabase.auth.signOut();
-    await federatedSupabase.auth.signOut();
+    await authSupabase.auth.signOut();
+    await dataSupabase.auth.signOut();
     setCurrentUser(null);
     setUserRole(null);
   };
 
   useEffect(() => {
-    const { data: listener } = federatedSupabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: listener } = dataSupabase.auth.onAuthStateChange(async (event, session) => {
       setCurrentUser(session?.user || null);
       
       if (session?.user) {
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
     });
     
     // Verificar sesión inicial
-    federatedSupabase.auth.getSession().then(async ({ data }) => {
+    dataSupabase.auth.getSession().then(async ({ data }) => {
       if (data?.session?.user) {
         setCurrentUser(data.session.user);
         const role = await getUserRole(data.session.user.id);
